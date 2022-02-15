@@ -1,3 +1,5 @@
+import json
+import config
 #
 # The main search hooks for the Search Flask application.
 #
@@ -74,7 +76,7 @@ def query():
         query_obj = create_query("*", [], sort, sortDir)
 
     print("query obj: {}".format(query_obj))
-    response = None   # TODO: Replace me with an appropriate call to OpenSearch
+    response = opensearch.search(query_obj, index = config.PRODUCT_INDEX)   # TODO: Replace me with an appropriate call to OpenSearch
     # Postprocess results here if you so desire
 
     #print(response)
@@ -97,4 +99,5 @@ def create_query(user_query, filters, sort="_score", sortDir="desc"):
             #TODO: FILL ME IN
         }
     }
+    print(json.dumps(query_obj))
     return query_obj
