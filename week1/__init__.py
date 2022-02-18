@@ -2,6 +2,7 @@ import os
 
 from flask import Flask
 from flask import render_template
+from flask import app
 
 def create_app(test_config=None):
     # create and configure the app
@@ -24,5 +25,8 @@ def create_app(test_config=None):
     from . import search
     app.register_blueprint(search.bp)
     app.add_url_rule('/', view_func=search.query)
+    app.jinja_env.globals.update(update_query_param=search.update_query_param)
+
 
     return app
+

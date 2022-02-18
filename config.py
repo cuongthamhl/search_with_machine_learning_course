@@ -1,1 +1,1 @@
-PRODUCT_INDEX = 'bbuy_products'
+PRODUCT_INDEX = 'bbuy_products_1'
