@@ -20,9 +20,8 @@
 /* See https://css-tricks.com/snippets/css/complete-guide-grid/ for details on grid */
 #all-results {
     display: grid;
-    grid-template-columns: 200px 90%;
-    grid-template-rows: 100px;
-    grid-column-gap: 15px;
+    height: auto;
+    grid-template-columns: repeat(24, 1fr);
 }
 
 .search-results {
@@ -30,7 +29,9 @@
 }
 
 .search-result{
-    margin-bottom: 10px;
+    padding: 15px 0;
+    margin-bottom: 25px;
+    border-bottom: 1px dotted #999;
 }
 
 .search-result > img{
@@ -38,7 +39,7 @@
 }
 
 .search-result-odd{
-    background: lightgray;
+    /*background: lightgray; */
 }
 
 .search-result-name {
@@ -47,29 +48,36 @@
     padding-bottom: 5px;
 }
 
+.aggr {
+    padding: 0
+}
+.aggr li {
+   list-style: none;
+   margin: 10px 0 10px 15px;
+}
 
-#applied-filters{
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.aggr li a {
+    color: #0000ff;
+}
+
+.aggr li.applied-filters{
+   font-weight: bold;
 }
 
 #search-meta-container {
-    grid-row-start: 1;
-    grid-row-end: 1;
-    grid-column: 1/span 2;
-    justify-self: center;
+    text-align: center;
+    margin: 15px 0 35px;
     
 }
 
 
 #aggregations-container{
-    grid-row-start: 2;
+    grid-column: 1 / span 4;
+    font-size: 14px
 }
 
 #search-results-container{
-    grid-row-start: 2;
+    grid-column: 5 / span all;
 }
 
 .aggregations-result{
@@ -112,4 +120,20 @@ Headers and footers
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.product-details-container {
+    display: flex;
+    flex-flow: column wrap;
+    align-content: flex-start;
+    flex-direction: row;
+    padding-top: 15px;
+}
+
+.product-details-left {
+    width: 140px
+}
+
+.product-details-right {
+    max-width: 500px;
 }

@@ -1,28 +1,40 @@
 <div id="aggregations">
-  {% if search_response.aggregations%}<div class="aggregations-result">
-    <div class="agg-header">Price</div>
-    {% if "filter.name=regularPrice" not in applied_filters %}
-      {% for agg in search_response.aggregations.regularPrice.buckets %}
-        {% if agg.doc_count > 0 %}
-          <div class="aggregation">
-            <div><a
-                href="{{ url_for("search.query") }}?&query={{ query|e }}{{ applied_filters }}&filter.name=regularPrice&regularPrice.type=range&regularPrice.key={{ agg.key }}&regularPrice.from={{ agg.from }}&regularPrice.to={{ agg.to }}&regularPrice.displayName=Price">{{ agg.key }} (${{ agg.from }} TO ${{ agg.to }}): {{ agg.doc_count }}</a>
-            </div>
-          </div>{% endif %}
-      {% endfor %}
-    {% else %}
-      {# We've already applied it, just display it #}
-      {% for agg in search_response.aggregations.regularPrice.buckets %}
-        {% if agg.doc_count > 0 %}
-          <div class="aggregation">
-            <div>{{ agg.key }}: {{ agg.doc_count }}</div>
-          </div>{% endif %}
-      {% endfor %}
-    {% endif %}
+  {% if search_response.aggregations  %}<div class="aggregations-result">
+  <div style="margin: 15px 0">
+  <a href="{{ url_for('.query') }}" style="color: #0000ff; font-size: 16px">Clear Filters</a>
+</div>
+    {% set aggs = search_response.aggregations %}
+    {% for agg_key,agg_value in aggs.items() %}
+        <div class="agg-header">
+        
+        {{agg_key}}
+       
+        </div>
+
+        <ul class="aggr">
+       {% for bucket in agg_value.buckets %}
+         
+         {% if request.args.get('filter.' + agg_key) == bucket.key %}
+         <li class="applied-filters">{{bucket.key}} ({{bucket.doc_count}})</li>
+         {% else %}
+         <li>
+         <a href="{{url_for('.query')}}?{{update_query_param('filter.' + agg_key, bucket.key)}}">{{bucket.key}}</a> ({{bucket.doc_count}})
+         </li>
+         {% endif %}
+         
+       {% endfor %}
+        </ul>
+
+    {% endfor %}
+
+ 
   </div>
   {#Add in Department aggregation display here #}
   <div class="aggregations-result">
     <div class="agg-header">Missing Data</div>
+    {#
     <div>image: {{ search_response.aggregations.missing_images.doc_count }}</div>
+    #}
   </div>{% endif %}
 </div>
+
