@@ -9,88 +9,38 @@ from flask import (
 from urllib.parse import urlparse
 from urllib.parse import urlencode
 
-from week1.opensearch import get_opensearch
+from week1.opensearch import open_search_client
 
 bp = Blueprint('search', __name__, url_prefix='/search')
 
-sortable_fields = {
-    "_score": "Relevance",
-    "name.keyword": "Name",
-    "salesRankShortTerm": "Popularity",
-    "regularPrice": "Price"
-}
 
-# Process the filters requested by the user and return a tuple that is appropriate for use in: the query, URLs displaying the filter and the display of the applied filters
-# filters -- convert the URL GET structure into an OpenSearch filter query
-# display_filters -- return an array of filters that are applied that is appropriate for display
-# applied_filters -- return a String that is appropriate for inclusion in a URL as part of a query string.  This is basically the same as the input query string
-
-
-def process_filters(filters_input):
-    # Filters look like: &filter.name=regularPrice&regularPrice.key={{ agg.key }}&regularPrice.from={{ agg.from }}&regularPrice.to={{ agg.to }}
-    filters = []
-    # Also create the text we will use to display the filters that are applied
-    display_filters = []
-    applied_filters = ""
-    for filter in filters_input:
-        type = request.args.get(filter + ".type")
-        display_name = request.args.get(filter + ".displayName", filter)
-        #
-        # We need to capture and return what filters are already applied so they can be automatically added to any existing links we display in aggregations.jinja2
-        applied_filters += "&filter.name={}&{}.type={}&{}.displayName={}".format(filter, filter, type, filter,
-                                                                                 display_name)
-        # TODO: IMPLEMENT AND SET filters, display_filters and applied_filters.
-        # filters get used in create_query below.  display_filters gets used by display_filters.jinja2 and applied_filters gets used by aggregations.jinja2 (and any other links that would execute a search.)
-        if type == "range":
-            pass
-        elif type == "terms":
-            pass  # TODO: IMPLEMENT
-    print("Filters: {}".format(filters))
-
-    return filters, display_filters, applied_filters
-
-
-# Our main query route.  Accepts POST (via the Search box) and GETs via the clicks on aggregations/facets
+# Our main query route
 @bp.route('/query', methods=['GET', 'POST'])
 def query():
-    # Load up our OpenSearch client from the opensearch.py file.
-    opensearch = get_opensearch()
-    # Put in your code to query opensearch.  Set error as appropriate.
+
     error = None
-    user_query = None
-    query_obj = None
-    display_filters = None
-    applied_filters = ""
-    filters = None
-    sort = "_score"
-    sortDir = "desc"
-    
-    # elif request.method == 'GET':  # Handle the case where there is no query or just loading the page
-    user_query = request.args.get("query", "")
-    filters_input = request.args.getlist("filter.name", [])
-    sort = request.args.get("sort", sort)
-    sortDir = request.args.get("sortDir", sortDir)
+    es_query = None
+    es_query = create_query(request.args)
 
-    (filters, display_filters, applied_filters) = process_filters(filters_input)
-    query_obj = create_query(user_query, filters, sort, sortDir)
+    print(json.dumps(es_query))
 
-    print("query obj: {}".format(query_obj))
-    # TODO: Replace me with an appropriate call to OpenSearch
-    response = opensearch.search(query_obj, index=config.PRODUCT_INDEX)
-    # Postprocess results here if you so desire
+    response = open_search_client.search(es_query, index=config.PRODUCT_INDEX)
 
-    # print(response)
     if error is None:
         return render_template(
-            "search_results.jinja2", query=user_query, search_response=response,
-            display_filters=display_filters, applied_filters=applied_filters,
-            sort=sort, sortDir=sortDir, sortable_fields=sortable_fields)
+            "search_results.jinja2",
+            query=request.args.get('query', ''),
+            search_response=response,
+            display_filters=None, applied_filters="",
+            sort=None, sortDir=None)
     else:
         redirect(url_for("index"))
 
 
-def create_query(user_query, filters, sort="_score", sort_dir="desc"):
-    print("Query: {} Filters: {} Sort: {}".format(user_query, filters, sort))
+def create_query(query_params: dict):
+    search_phrase = query_params.get('query', '')
+    sort = query_params.get('sort', '_score')
+    sort_dir = query_params.get('sortDir', 'DESC')
 
     if sort == 'name':
         sort_query = {"name.keyword": {"order": sort_dir}}
@@ -101,51 +51,187 @@ def create_query(user_query, filters, sort="_score", sort_dir="desc"):
     else:
         sort_query = {"_score": {"order": sort_dir}}
 
+    base_search_query = {
+        "multi_match": {
+            "query": search_phrase,
+            "fields": ["name^1000", "shortDescription^50", "longDescription^10", "department"]
+        }
+    }
+
+    if len(search_phrase) == 0:
+        base_search_query = {
+            "match_all": {}
+        }
+
+    shared_boolean_filter_query = {
+        "bool": {
+            "filter": []
+        }
+    }
+
+    # shared filters that will be applied to both aggregations and post_filters
+    # aggregations: left navigation
+    # post_filters: search results on the right
+    shared_filters = []
+
+    price_filter_query = {}
+    if 'filter.Price' in query_params:
+        price_param = query_params.get('filter.Price')
+        min = 0
+        max = 9999999
+
+        # not very clean, but for quick turnaround
+        if price_param == '*-100.0':
+            min = 0
+            max = 99.99
+        elif price_param == '100.0-200.0':
+            min = 100
+            max = 199.99
+        elif price_param == '200.0-*':
+            min = 200
+            max = 9999
+
+        price_filter_query['range'] = {}
+        price_filter_query['range']['regularPrice'] = {
+            'gte': min,
+            'lt': max
+        }
+
+    if len(price_filter_query) > 0:
+        shared_filters.append(price_filter_query)
+
+    department_filter_query = {}
+    if 'filter.Departments' in query_params:
+        param = query_params.get('filter.Departments')
+        if len(param) > 0:
+            department_filter_query['term'] = {}
+            department_filter_query['term']['department.department'] = param
+
+    if len(department_filter_query) > 0:
+        shared_filters.append(department_filter_query)
+
+    shared_boolean_filter_query['bool']['filter'] = shared_filters
+
     aggs = {
         "Departments": {
-            "terms": {
-                "field": "department.department"
+            "filter": shared_boolean_filter_query,
+            "aggs": {
+                "buckets": {
+                    "terms": {
+                        "field": "department.department"
+
+                    }
+                }
             }
         },
         "Price": {
-            "range": {
-                "field": "regularPrice",
-                "ranges": [
-                        {"to": 100.0},
-                        {"from": 100.0, "to": 200.0},
-                        {"from": 200.0}
-                ]
+            "filter": shared_boolean_filter_query,
+            "aggs": {
+                "buckets": {
+                    "range": {
+                        "field": "regularPrice",
+                        "ranges": [
+                            {"to": 100.0},
+                            {"from": 100.0, "to": 200.0},
+                            {"from": 200.0}
+                        ]
+                    }
+                }
+            }
+        },
+        "Images": {
+            "filter": {
+                "match_all": {}
+            },
+            "aggs": {
+                "buckets": {
+                    "missing": {
+                        "field": "image.keyword"
+                    }
+                }
+            }
+        }
+
+    }
+
+    filtered_aggs = {
+        "filtered_aggs": {
+            "filters": {
+                "filters": []
             }
         }
     }
 
-    if len(user_query) == 0:
-        query_obj = {
-            'size': 10,
-            "query": {
-                "match_all": {
+    main_es_query = {
+        'size': 10,
+        "query": {
+            "function_score": {
+                "query": {
+                    "bool": {
+                        "must": base_search_query,
+                        # "should": [
+                        #     {
+                        #        # TODO: boost quality signals
 
-                }
-            },
-            "aggs": aggs
+                        #     }
+                        # ]
+                    }
+                },
+                "boost_mode": "replace",
+                "score_mode": "avg",
+                "functions": [
+                    {
+                        "field_value_factor": {
+                            "field": "salesRankLongTerm",
+                            "missing": 100000000,
+                            "modifier": "reciprocal"
+                        }
+                    },
+                    {
+                        "field_value_factor": {
+                            "field": "salesRankMediumTerm",
+                            "missing": 100000000,
+                            "modifier": "reciprocal"
+                        }
+                    },
+                    {
+                        "field_value_factor": {
+                            "field": "salesRankShortTerm",
+                            "missing": 100000000,
+                            "modifier": "reciprocal"
+                        }
+                    },
+                ]
+            }
+        },
+        "aggs": aggs
+    }
 
+    if len(shared_filters) > 0:
+        main_es_query['post_filter'] = {
+            "bool": {
+                "filter": shared_filters
+            }
         }
+
+    main_es_query["sort"] = sort_query
+
+    return main_es_query
+
+
+@bp.app_template_filter('first_elem_or_default')
+def first_elem_or_default(input, default):
+    if len(input) > 0:
+        return input[0]
     else:
-        query_obj = {
-            'size': 10,
-            "query": {
-                "match": {
-                    "name": user_query
-                }
-            },
-            "aggs": aggs
-        }
-    query_obj["sort"] = sort_query
-    print(json.dumps(query_obj))
-    return query_obj
+        return default
+
 
 def update_query_param(key, value):
     # Bad example, not clean code
     qs = request.args.copy()
-    qs[key] = value
+    if len(value) > 0:
+        qs[key] = value
+    else:
+        qs.pop(key, None)
     return urlencode(qs)
