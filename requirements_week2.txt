@@ -11,3 +11,7 @@ numexpr
 sklearn
 graphviz
 matplotlib
+debugpy
+debugpy-run
+jupyter
+jupyterlab

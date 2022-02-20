@@ -252,11 +252,14 @@ if __name__ == "__main__":
             (impressions_df, query_ids_map) = data_prepper.synthesize_impressions(train_df,
                                                                                   min_impressions=args.min_impressions,
                                                                                   min_clicks=args.min_clicks)
+
+            # TODO does this line do anything? The change is not in-place
             impressions_df.drop(["product_name", "sku"], axis=1)
             impressions_df = impressions_df.sample(n=args.generate_num_rows).reset_index(drop=True)  # shuffle things
             # impressions_df = impressions_df[:args.generate_num_rows]
             (impressions_df, query_ids_map) = data_prepper.generate_impressions(impressions_df,
                                                                                 query_ids_map,
+                                                                                1000,
                                                                                 min_impressions=args.min_impressions,
                                                                                 min_clicks=args.min_clicks)  # impressions as a Pandas DataFrame
         print("Writing impressions to file: %s/%s" % (output_dir, args.impressions_file))
@@ -380,7 +383,8 @@ if __name__ == "__main__":
         # DataFrame: query, doc, rank, type, miss, score, new
         results_df, no_results = su.evaluate_test_set(test_data, train_df, opensearch, args.xgb_model_name,
                                                       args.ltr_store, args.index, num_queries=args.xgb_test_num_queries,
-                                                      main_query_weight=args.xgb_main_query_weight, rescore_query_weight=args.xgb_rescore_query_weight
+                                                      main_query_weight=args.xgb_main_query_weight, rescore_query_weight=args.xgb_rescore_query_weight,
+                                                      size=5000
                                                       )
         print("Writing results of test to %s" % "%s/%s" % (output_dir, args.xgb_test_output))
         results_df.to_csv("%s/%s" % (output_dir, args.xgb_test_output), index=False)
