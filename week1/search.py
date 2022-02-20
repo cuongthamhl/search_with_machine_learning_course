@@ -31,8 +31,11 @@ def query():
             "search_results.jinja2",
             query=request.args.get('query', ''),
             search_response=response,
-            display_filters=None, applied_filters="",
-            sort=None, sortDir=None)
+            display_filters=None,
+            applied_filters="",
+            sort=request.args.get('sort', '_score'),
+            sortDir=request.args.get('sortDir', 'DESC')
+        )
     else:
         redirect(url_for("index"))
 
@@ -52,11 +55,28 @@ def create_query(query_params: dict):
         sort_query = {"_score": {"order": sort_dir}}
 
     base_search_query = {
-        "multi_match": {
-            "query": search_phrase,
-            "fields": ["name^1000", "shortDescription^50", "longDescription^10", "department"]
+        "bool": {
+            "should": [
+                {
+                    "match_phrase": {
+                        "name.no_special_chars": {
+                            "query": search_phrase,
+                            "boost": 100
+                        }
+                    }
+                }
+            ]
         }
     }
+
+    # base_search_query = {
+    #     "match": {
+    #         "name": {
+    #             "query": search_phrase,
+    #             #"analyzer": "phasal_search_analyzer"
+    #         }
+    #     }
+    # }
 
     if len(search_phrase) == 0:
         base_search_query = {

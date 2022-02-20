@@ -245,6 +245,13 @@
           "keyword": {
             "type": "keyword",
             "ignore_above": 256
+          },
+          "raw": {
+            "type": "text"
+          },
+          "no_special_chars": {
+            "type": "text",
+            "analyzer": "no_special_chars_analyzer"
           }
         }
       },
@@ -401,6 +408,23 @@
       "refresh_interval": "5s",
       "number_of_shards": "1",
       "number_of_replicas": "1"
+    },
+    "analysis": {
+      "analyzer":{
+        "no_special_chars_analyzer": {
+          "tokenizer":"standard",
+          "filter": ["lowercase", "apostrophe"],
+          "char_filter": ["no_special_chars_filter"]
+        }
+      },
+      "char_filter": {
+        "no_special_chars_filter": {
+          "type": "mapping",
+          "mappings": [
+            "® => "
+          ]
+        }
+      }
     }
   }
 }
