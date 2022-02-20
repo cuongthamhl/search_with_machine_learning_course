@@ -1,10 +1,9 @@
 <div id="aggregations">
-  {% if search_response.aggregations  %}<div class="aggregations-result">
-  <div style="margin: 15px 0">
-  <a href="{{ url_for('.query') }}" style="color: #0000ff; font-size: 16px">Clear Filters</a>
-</div>
+  {% if search_response.aggregations  %}
+  <div class="aggregations-result" style="padding-top: 30px">
     {% set aggs = search_response.aggregations %}
     {% for agg_key,agg_value in aggs.items() %}
+    {% if agg_key != 'Images' %}
         <div class="agg-header">
         
         {{agg_key}}
@@ -12,7 +11,13 @@
         </div>
 
         <ul class="aggr">
-       {% for bucket in agg_value.buckets %}
+
+        {% if request.args.get('filter.' + agg_key) == None %}
+        <li class="applied-filters">All ({{agg_value.doc_count}})</a>
+        {% else %}
+        <li><a href="{{url_for('.query')}}?{{update_query_param('filter.' + agg_key, '')}}">All ({{agg_value.doc_count}})</a>
+        {% endif %}
+       {% for bucket in agg_value.buckets.buckets %}
          
          {% if request.args.get('filter.' + agg_key) == bucket.key %}
          <li class="applied-filters">{{bucket.key}} ({{bucket.doc_count}})</li>
@@ -24,7 +29,7 @@
          
        {% endfor %}
         </ul>
-
+    {% endif %}
     {% endfor %}
 
  
@@ -32,9 +37,9 @@
   {#Add in Department aggregation display here #}
   <div class="aggregations-result">
     <div class="agg-header">Missing Data</div>
-    {#
-    <div>image: {{ search_response.aggregations.missing_images.doc_count }}</div>
-    #}
+    
+    <div>Image: {{ search_response.aggregations.Images.buckets.doc_count }}</div>
+    
   </div>{% endif %}
 </div>
 
