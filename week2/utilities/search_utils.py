@@ -160,17 +160,32 @@ def analyze_results(results_df, no_results_df, new_queries_df, opensearch, index
     print("Queries not seen during training: [%s]\n%s\n\n" % (len(new_queries_df), new_queries_df))
     # MRR: mean reciprocal rank, closer to 1 is better, closer to zero is worse
 
-    print("Simple MRR is %.3f" % (calculate_mrr(results_df, "simple", len(no_results_df["simple"]))))
-    print("LTR Simple MRR is %.3f" % (calculate_mrr(results_df, "ltr_simple", len(no_results_df["ltr_simple"]))))
-    print("Hand tuned MRR is %.3f" % (calculate_mrr(results_df, "hand_tuned", len(no_results_df["hand_tuned"]))))
-    print("LTR Hand Tuned MRR is %.3f" % (calculate_mrr(results_df, "ltr_hand_tuned", len(no_results_df["ltr_hand_tuned"]))))
+    simple_mrr = calculate_mrr(results_df, "simple", len(no_results_df["simple"]))
+    ltr_simple_mrr = calculate_mrr(results_df, "ltr_simple", len(no_results_df["ltr_simple"]))
+    hand_tuned_mrr = calculate_mrr(results_df, "hand_tuned", len(no_results_df["hand_tuned"]))
+    ltr_hand_tuned_mrr = calculate_mrr(results_df, "ltr_hand_tuned", len(no_results_df["ltr_hand_tuned"]))
+
+    simple_p_at = (precision, calculate_precision(results_df, "simple", len(no_results_df["simple"]), precision))
+    ltr_simple_p_at = (precision, calculate_precision(results_df, "ltr_simple", len(no_results_df["ltr_simple"]), precision))
+    hand_tuned_p_at = (precision, calculate_precision(results_df, "hand_tuned", len(no_results_df["hand_tuned"]), precision))
+    ltr_hand_tuned_p_at = (precision, calculate_precision(results_df, "ltr_hand_tuned", len(no_results_df["ltr_hand_tuned"]), precision))
+
+    print("Simple MRR is %.3f" % simple_mrr)
+    print("LTR Simple MRR is %.3f" % ltr_simple_mrr)
+    print("Hand tuned MRR is %.3f" % hand_tuned_mrr)
+    print("LTR Hand Tuned MRR is %.3f" % ltr_hand_tuned_mrr)
     # Caveat emmptor: precision is hard to define here, we're inferring a prior click as meaning the result is relevant.
     # This is self-serving, but really this whole thing is just trying to learn clicks
     print("")
-    print("Simple p@%s is %.3f" % (precision, calculate_precision(results_df, "simple", len(no_results_df["simple"]), precision)))
-    print("LTR simple p@%s is %.3f" % (precision, calculate_precision(results_df, "ltr_simple", len(no_results_df["ltr_simple"]), precision)))
-    print("Hand tuned p@%s is %.3f" % (precision, calculate_precision(results_df, "hand_tuned", len(no_results_df["hand_tuned"]), precision)))
-    print("LTR hand tuned p@%s is %.3f" % (precision, calculate_precision(results_df, "ltr_hand_tuned", len(no_results_df["ltr_hand_tuned"]), precision)))
+    print("Simple p@%s is %.3f" % simple_p_at)
+    print("LTR simple p@%s is %.3f" % ltr_simple_p_at)
+    print("Hand tuned p@%s is %.3f" % hand_tuned_p_at)
+    print("LTR hand tuned p@%s is %.3f" % ltr_hand_tuned_p_at)
+
+    results_data = [simple_mrr, ltr_simple_mrr, hand_tuned_mrr, ltr_hand_tuned_mrr, simple_p_at[1], ltr_simple_p_at[1], hand_tuned_p_at[1], ltr_hand_tuned_p_at[1]]
+    print(', '.join(map(lambda x: str(x), results_data)))
+    print('')
+
     # Do some comparisons between the sets
     simple_df = results_df[results_df["type"] == "simple"]
     ltr_simple_df = results_df[results_df["type"] == "ltr_simple"]

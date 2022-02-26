@@ -31,16 +31,11 @@ def query():
             "search_results.jinja2",
             query=request.args.get('query', ''),
             search_response=response,
-<<<<<<< HEAD
             display_filters=None,
             applied_filters="",
             sort=request.args.get('sort', '_score'),
             sortDir=request.args.get('sortDir', 'DESC')
         )
-=======
-            display_filters=None, applied_filters="",
-            sort=None, sortDir=None)
->>>>>>> dc776ab (Week 1 submission v1)
     else:
         redirect(url_for("index"))
 

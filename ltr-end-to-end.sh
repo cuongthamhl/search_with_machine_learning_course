@@ -64,11 +64,13 @@ python $WEEK/utilities/build_ltr.py --generate_impressions  --output_dir "$OUTPU
 if [ $? -ne 0 ] ; then
   exit 2
 fi
+
 # Create the actual training set from the impressions set
 python $WEEK/utilities/build_ltr.py --ltr_terms_field sku --output_dir "$OUTPUT_DIR" --create_xgb_training -f $WEEK/conf/ltr_featureset.json --click_model $CLICK_MODEL $DOWNSAMPLE
 if [ $? -ne 0 ] ; then
   exit 2
 fi
+
 # Given a training set in SVMRank format, train an XGB model
 python $WEEK/utilities/build_ltr.py  --output_dir "$OUTPUT_DIR" -x "$OUTPUT_DIR/training.xgb" --xgb_conf $WEEK/conf/xgb-conf.json
 if [ $? -ne 0 ] ; then
