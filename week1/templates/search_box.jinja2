@@ -1,16 +1,21 @@
 <div id="search-box"> 
-  <form method="post" action="{{ url_for('search.query') }}">
-    <input name="query" id="query" type="search" value="{{ query|e }}" required>
+  <form method="GET" action="{{ url_for('search.query') }}">
+    <input name="query" id="query" type="search" value="{{ query|e }}">
     <input type="submit" value="Query">
     <select name="sort">
-      <option value="_score" {% if sort == "_score" %}selected{% endif %} >Relevance</option>
-      <option value="name.keyword" {% if sort == "name.keyword" %}selected{% endif %}>Name</option>
-      <option value="salesRankShortTerm" {% if sort == "salesRankShortTerm" %}selected{% endif %}>Popularity</option>
-      <option value="regularPrice" {% if sort == "regularPrice" %}selected{% endif %}>Price</option>
+      <option value="_score" {% if sort == "relevance" %}selected{% endif %} >Relevance</option>
+      <option value="name" {% if sort == "name" %}selected{% endif %}>Name</option>
+      <option value="popularity" {% if sort == "popularity" %}selected{% endif %}>Popularity</option>
+      <option value="price" {% if sort == "price" %}selected{% endif %}>Price</option>
     </select>
     <select name="sortDir">
       <option value="asc" {% if sortDir == "asc" %}selected{% endif %}>Ascending</option>
       <option value="desc" {% if sortDir == "desc" %}selected{% endif %}>Descending</option>
     </select>
+    {% for qs_key,qs_value in request.args.items() %}
+      {% if qs_key.startswith('filter.') %}
+        <input type="hidden" name="{{qs_key}}" value="{{qs_value}}" />
+      {% endif %}
+    {% endfor %}
   </form>
 </div>
