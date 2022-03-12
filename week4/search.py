@@ -6,7 +6,6 @@ from flask import (
 )
 
 from week4.opensearch import get_opensearch
-
 import week4.utilities.query_utils as qu
 import week4.utilities.ltr_utils as lu
 
@@ -74,7 +73,13 @@ def query():
     ltr_store_name = "week2"
     ltr_model_name = "ltr_model"
     explain = False
+    use_query_understanding = False
     if request.method == 'POST':  # a query has been submitted
+        use_query_understanding = request.form['use_query_understanding']
+        if not use_query_understanding:
+            use_query_understanding = False
+        
+
         user_query = request.form['query']
         if not user_query:
             user_query = "*"
@@ -104,7 +109,7 @@ def query():
             query_obj = qu.create_query(user_query, click_prior, [], sort, sortDir, size=100)  # We moved create_query to a utility class so we could use it elsewhere.
             print("Hand tuned q: %s" % query_obj)
         else:
-            query_obj = qu.create_simple_baseline(user_query, click_prior, [], sort, sortDir, size=100)  # We moved create_query to a utility class so we could use it elsewhere.
+            query_obj = qu.create_simple_baseline(user_query, click_prior, [], sort, sortDir, size=100, use_query_understanding=use_query_understanding)  # We moved create_query to a utility class so we could use it elsewhere.
             print("Plain ol q: %s" % query_obj)
     elif request.method == 'GET':  # Handle the case where there is no query or just loading the page
         user_query = request.args.get("query", "*")
@@ -132,14 +137,15 @@ def query():
         query_obj = qu.create_query("*", "", [], sort, sortDir, size=100)
 
     #print("query obj: {}".format(query_obj))
-    response = opensearch.search(body=query_obj, index=current_app.config["index_name"], explain=explain)
+    response = opensearch.search(body=query_obj, index='bbuy_products', explain=explain)
     # Postprocess results here if you so desire
 
+    print(f'========================>>> use_query_understanding: {use_query_understanding}')
     #print(response)
     if error is None:
         return render_template("search_results.jinja2", query=user_query, search_response=response,
                                display_filters=display_filters, applied_filters=applied_filters,
-                               sort=sort, sortDir=sortDir, model=model, explain=explain)
+                               sort=sort, sortDir=sortDir, model=model, explain=explain, use_query_understanding=use_query_understanding)
     else:
         redirect(url_for("index"))
 

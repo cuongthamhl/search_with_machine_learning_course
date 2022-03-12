@@ -12,5 +12,9 @@
       <option value="asc" {% if sortDir == "asc" %}selected{% endif %}>Ascending</option>
       <option value="desc" {% if sortDir == "desc" %}selected{% endif %}>Descending</option>
     </select>
+     <select name="use_query_understanding">
+      <option value="True" {% if use_query_understanding == "True" %}selected{% endif %}>use_query_understanding: true</option>
+      <option value="False" {% if use_query_understanding == "False" %}selected{% endif %}>use_query_understanding: false</option>
+    </select>
   </form>
 </div>

@@ -13,3 +13,7 @@ graphviz
 matplotlib
 fasttext
 nltk
+debugpy
+debugpy-run
+jupyterlab
+treelib

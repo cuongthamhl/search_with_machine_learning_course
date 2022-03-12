@@ -1,4 +1,8 @@
 import math
+from utilities.query_classifier import predict
+import functions
+import json
+
 # some helpful tools for dealing with queries
 def create_stats_query(aggs, extended=True):
     print("Creating stats query from %s" % aggs)
@@ -41,7 +45,30 @@ def create_prior_queries(doc_ids, doc_id_weights, query_times_seen): # total imp
 
 
 
-def create_simple_baseline(user_query, click_prior_query, filters, sort="_score", sortDir="desc", size=10, include_aggs=True, highlight=True, source=None):
+def create_simple_baseline(user_query, click_prior_query, filters, sort="_score", sortDir="desc", size=10, include_aggs=True, highlight=True, source=None, use_query_understanding=False):
+    category_predictions = predict(user_query, 3, 0.1)
+
+    # if use_query_understanding == 'False' or use_query_understanding == False:
+    #     cat_terms = []
+    # else:
+    #     cat_terms = list(map(lambda x: x['label'], category_predictions))
+        
+    classification_boosts = []
+
+    if use_query_understanding == True or use_query_understanding == 'True':
+        for prediction in category_predictions:
+            classification_boosts.append({
+                "term": {
+                    "categoryPathIds.keyword": {
+                        "value": prediction['label'],
+                        "boost": 35 * prediction['score'] * 2
+                    }
+                }
+            })
+            
+
+    print(f'>>>>>>>>=> classification_boosts:')
+    print(classification_boosts)
 
     query_obj = {
         'size': size,
@@ -98,7 +125,8 @@ def create_simple_baseline(user_query, click_prior_query, filters, sort="_score"
                                 "minimum_should_match": "2<75%"
                             }
                        }
-                    }
+                    },
+                    *classification_boosts
                 ],
                 "filter": filters  #
             }
@@ -133,6 +161,10 @@ def create_simple_baseline(user_query, click_prior_query, filters, sort="_score"
 
     if include_aggs:
         add_aggs(query_obj)
+
+
+    print(json.dumps(query_obj))
+    
     return query_obj
 
 # Hardcoded query here.  Better to use search templates or other query config.
