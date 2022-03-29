@@ -16,7 +16,7 @@ def plots(xgb_model, xgb_model_name, xgb_feat_map, xgb_plot):
         num_trees = len(bst.get_dump(fmap=xgb_feat_map))
         print("Plotting trees: %s" % (num_trees-1))
         model_plot = plot_tree(bst, fmap=xgb_feat_map, num_trees=num_trees-1)
-        model_plot.figure.savefig("%s/%s_tree.png" % (xgb_plot, model_name), dpi=300)
+        model_plot.figure.savefig("%s/%s_tree.png" % (xgb_plot, model_name), dpi=300, rankdir='LR')
         print("Plotting feature importance")
         impt_plt = plot_importance(bst, fmap=xgb_feat_map)
         impt_plt.figure.savefig("%s/%s_importance.png" % (xgb_plot, model_name), dpi=300)
@@ -25,12 +25,21 @@ def plots(xgb_model, xgb_model_name, xgb_feat_map, xgb_plot):
 
 
 # xgb_train_data is a string path to our training file
-def train(xgb_train_data, num_rounds=5, xgb_conf=None ):
-    xgb_params = {'objective': 'reg:logistic'}
-    bst = None
+def train(xgb_train_data, num_rounds=50, xgb_conf=None ):
+    params = {
+        'max_depth': 50,
+        'verbosity': 2,
+        'learning_rate': 0.01,
+        'objective': 'reg:logistic',        
+    }
+
+    dtrain = xgb.DMatrix(xgb_train_data)
+    bst = xgb.train(params=params, dtrain=dtrain, num_boost_round=1000)
+
     if xgb_conf is not None:
         with open(xgb_conf) as json_file:
-            xgb_params = json.load(json_file)
-    print("Training XG Boost on %s for %s rounds with params: %s" % (xgb_train_data, num_rounds, xgb_params))
-    print("IMPLEMENT ME: train()")
-    return bst, xgb_params
+            params = json.load(json_file)
+    print("Training XG Boost on %s for %s rounds with params: %s" % (xgb_train_data, num_rounds, params))
+    #print("IMPLEMENT ME: train()")
+    return bst, params
+

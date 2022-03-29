@@ -9,6 +9,7 @@ from week2.opensearch import get_opensearch
 
 import week2.utilities.query_utils as qu
 import week2.utilities.ltr_utils as lu
+import json
 
 bp = Blueprint('search', __name__, url_prefix='/search')
 
@@ -89,16 +90,18 @@ def query():
             explain = True
         model = request.form.get("model", "simple")
         click_prior = get_click_prior(user_query)
+        #click_prior = ''
+        rescore_size = 5000
 
         if model == "simple_LTR":
             query_obj = qu.create_simple_baseline(user_query, click_prior, [], sort, sortDir, size=500)  # We moved create_query to a utility class so we could use it elsewhere.
             query_obj = lu.create_rescore_ltr_query(user_query, query_obj, click_prior, ltr_model_name, ltr_store_name,
-                                                    rescore_size=500, main_query_weight=0)
+                                                    rescore_size=rescore_size, main_query_weight=0)
             print("Simple LTR q: %s" % query_obj)
         elif model == "ht_LTR":
             query_obj = qu.create_query(user_query, click_prior, [], sort, sortDir, size=500)  # We moved create_query to a utility class so we could use it elsewhere.
             query_obj = lu.create_rescore_ltr_query(user_query, query_obj, click_prior, ltr_model_name, ltr_store_name,
-                                                    rescore_size=500, main_query_weight=0)
+                                                    rescore_size=rescore_size, main_query_weight=0)
             print("LTR q: %s" % query_obj)
         elif model == "hand_tuned":
             query_obj = qu.create_query(user_query, click_prior, [], sort, sortDir, size=100)  # We moved create_query to a utility class so we could use it elsewhere.
@@ -120,10 +123,10 @@ def query():
         model = request.args.get("model", "simiple")
         if model == "simple_LTR":
             query_obj = qu.create_simple_baseline(user_query, click_prior, filters, sort, sortDir, size=500)
-            query_obj = lu.create_rescore_ltr_query(user_query, query_obj, click_prior, ltr_model_name, ltr_store_name, rescore_size=500)
+            query_obj = lu.create_rescore_ltr_query(user_query, query_obj, click_prior, ltr_model_name, ltr_store_name, rescore_size=rescore_size)
         elif model == "ht_LTR":
             query_obj = qu.create_query(user_query, click_prior, filters, sort, sortDir, size=100)
-            query_obj = lu.create_rescore_ltr_query(user_query, query_obj, click_prior, ltr_model_name, ltr_store_name, rescore_size=100)
+            query_obj = lu.create_rescore_ltr_query(user_query, query_obj, click_prior, ltr_model_name, ltr_store_name, rescore_size=rescore_size)
         elif model == "hand_tuned":
             query_obj = qu.create_query(user_query, click_prior, filters, sort, sortDir, size=100)
         else:
@@ -132,6 +135,7 @@ def query():
         query_obj = qu.create_query("*", "", [], sort, sortDir, size=100)
 
     #print("query obj: {}".format(query_obj))
+    print(json.dumps(query_obj))
     response = opensearch.search(body=query_obj, index="bbuy_products", explain=explain)
     # Postprocess results here if you so desire
 

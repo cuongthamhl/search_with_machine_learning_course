@@ -6,6 +6,14 @@ import pandas as pd
 import query_utils as qu
 from opensearchpy import RequestError
 import os
+import json
+import pprint
+import re as regex
+
+PRODUCT_INDEX = 'bbuy_products'
+
+pp = pprint.PrettyPrinter(indent=4)
+
 
 # from importlib import reload
 
@@ -118,6 +126,10 @@ class DataPrepper:
         query_gb = query_df.groupby("query")  # small
         no_results = set()
         for key in query_gb.groups.keys():
+            if regex.search('^\d+$', key) != None:
+                print(f'Search query {key} is a number, skip generating impressions...')
+                continue
+
             query_id, query_counter = self.__get_query_id(key, query_ids_map, query_counter)
             #print("Q[%s]: %s" % (query_id, key))
             query_times_seen = 0 # careful here
@@ -133,6 +145,8 @@ class DataPrepper:
                                         source=["name", "sku"])  # TODO: handle categories
             # Fetch way more than usual so we are likely to see our documents that have been clicked
             try:
+                #print("-----------")
+                #print(json.dumps(query_obj))
                 response = self.opensearch.search(body=query_obj, index=self.index_name)
             except RequestError as re:
                 print(re, query_obj)
@@ -140,6 +154,12 @@ class DataPrepper:
                 if response and response['hits']['hits'] and len(response['hits']['hits']) > 0:
                     # we have a response with some hits
                     hits = response['hits']['hits']
+
+                    # debug_skus = []
+                    # for hit in hits:
+                    #     debug_skus.append(int(hit['_source']['sku'][0]))
+                    # print(debug_skus)
+
                     # print(hits)
                     skus_for_query = prior_clicks_for_query.sku.drop_duplicates()  # we are comparing skus later, so grab the Series now
 
@@ -151,7 +171,7 @@ class DataPrepper:
                         ranks.append(idx)
                         sku = int(hit['_source']['sku'][0])
                         skus.append(sku)
-                        num_clicks = self.__num_clicks(skus_for_query, sku)
+                        num_clicks = self.__num_clicks(query_df, key, skus_for_query, sku)
                         if num_clicks > 0:
                             total_clicked_docs_per_query += 1
                         num_impressions.append(query_times_seen)
@@ -215,6 +235,15 @@ class DataPrepper:
         print("The following queries produced no results: %s" % no_results)
         return features_df
 
+    def extract_ltr_feature(self, name, logged_features, default = 0):
+        for logged_feature in logged_features:
+            if name == logged_feature['name']:
+                if 'value' in logged_feature:
+                    return float(logged_feature['value'])
+                else: 
+                    return 0
+        return default
+
     # Features look like:
     # {'log_entry': [{'name': 'title_match',
     #          'value': 7.221403},
@@ -228,30 +257,69 @@ class DataPrepper:
     #         {'name': 'price_function', 'value': 0.0}]}]
     # For each query, make a request to OpenSearch with SLTR logging on and extract the features
     def __log_ltr_query_features(self, query_id, key, query_doc_ids, click_prior_query, no_results, terms_field="_id"):
+        features_to_log = [
+            'name_match',
+            'name_phrase_match',
+            #'name_hyphens_min_df',            
+            'shortDescription',
+            'longDescription',
+            'features',
+            'features_phrase',
+            'classifications',            
+            'salePrice',
+            'regularPrice',
+            'discount',
+            'click_prior',
+            'salesRankLongTerm',
+            'salesRankMediumTerm',
+            'salesRankShortTerm',
+            'bestSellingRank',
+            'categoryExactMatch',
+            #'cls_tablet'
+        ]
 
         log_query = lu.create_feature_log_query(key, query_doc_ids, click_prior_query, self.featureset_name,
                                                 self.ltr_store_name,
                                                 size=len(query_doc_ids), terms_field=terms_field)
+        
+        log_results = self.opensearch.search(log_query, index=PRODUCT_INDEX, request_timeout=30)
+        logged_docs_keyyed_by_sku = {}
+        for doc in log_results['hits']['hits']:
+            logged_docs_keyyed_by_sku[int(doc['_id'])] = doc
+
+
         # IMPLEMENT_START --
-        print("IMPLEMENT ME: __log_ltr_query_features: Extract log features out of the LTR:EXT response and place in a data frame")
+        #print("IMPLEMENT ME: __log_ltr_query_features: Extract log features out of the LTR:EXT response and place in a data frame")
         # Loop over the hits structure returned by running `log_query` and then extract out the features from the response per query_id and doc id.  Also capture and return all query/doc pairs that didn't return features
         # Your structure should look like the data frame below
         feature_results = {}
         feature_results["doc_id"] = []  # capture the doc id so we can join later
         feature_results["query_id"] = []  # ^^^
         feature_results["sku"] = []
-        feature_results["salePrice"] = []
-        feature_results["name_match"] = []
+
+        for fl_k in features_to_log:
+            feature_results[fl_k] = []
+        
         rng = np.random.default_rng(12345)
         for doc_id in query_doc_ids:
+            if doc_id not in logged_docs_keyyed_by_sku:
+                continue
+
+            logged_doc = logged_docs_keyyed_by_sku[doc_id]
+            logged_features = logged_doc['fields']['_ltrlog'][0]['log_entry1']
+           
             feature_results["doc_id"].append(doc_id)  # capture the doc id so we can join later
             feature_results["query_id"].append(query_id)
             feature_results["sku"].append(doc_id)  # ^^^
-            feature_results["salePrice"].append(rng.random())
-            feature_results["name_match"].append(rng.random())
+
+            for fl_k in features_to_log:
+                feature_results[fl_k].append(self.extract_ltr_feature(fl_k, logged_features, 0))
+           
         frame = pd.DataFrame(feature_results)
         return frame.astype({'doc_id': 'int64', 'query_id': 'int64', 'sku': 'int64'})
         # IMPLEMENT_END
+
+
 
     # Can try out normalizing data, but for XGb, you really don't have to since it is just finding splits
     def normalize_data(self, ranks_features_df, feature_set, normalize_type_map):
@@ -300,6 +368,15 @@ class DataPrepper:
                 aggs)  # return out the aggregations, bc we are going to need it to write the model normalizers
 
     # Determine the number of clicks for this sku given a query (represented by the click group)
-    def __num_clicks(self, all_skus_for_query, test_sku):
-        print("IMPLEMENT ME: __num_clicks(): Return how many clicks the given sku received in the set of skus passed ")
-        return 0
+    def __num_clicks(self, train_df, search_query, all_skus_for_query, test_sku):
+        #print("IMPLEMENT ME: __num_clicks(): Return how many clicks the given sku received in the set of skus passed ")
+        # TODO
+        num_clicks_array = train_df.loc[(train_df['sku'] == test_sku) & (train_df['query'] == search_query)]['clicks'].values
+        if len(num_clicks_array) > 0:
+            num_clicks = num_clicks_array[0]
+        else:
+            num_clicks = 0
+
+        if num_clicks > 0:
+            print(f'search_query={search_query}, sku={test_sku}, num_clicks={num_clicks}')
+        return num_clicks

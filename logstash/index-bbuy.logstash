@@ -78,7 +78,37 @@ input {
 
       mutate{
         remove_field => ["message", "host", "path"] # clean up some stuff we don't need
+        copy => { "[categoryPath]" => "[categoryPathExact]" }
       }
+
+      ruby {
+        code => "
+        vs = event.get('categoryPathExact')
+        if vs.kind_of?(Array)            
+            event.set('categoryPathExact', vs.map { |v| '_S ' + v + ' S_' })
+        end
+        
+        salePrice = 0
+        if event.get('salePrice') != nil
+            salePrice = event.get('salePrice').at(0).to_f
+        end
+        
+        regularPrice = 0
+        if event.get('regularPrice') != nil
+            regularPrice = event.get('regularPrice').at(0).to_f
+        end
+
+        discount = 0
+
+        if regularPrice != 0
+            discount = 1 - (salePrice / regularPrice)
+        end
+
+        print
+        event.set('discount', discount)
+        "
+      }
+
       # Drop the root event, which doesn't contain any product information
       if ![productId] {
         drop{}

@@ -26,73 +26,6 @@
         }
       },
       {
-        "name": "salePrice",
-        "template_language": "mustache",
-        "template": {
-          "function_score": {
-            "functions": [
-              {
-                "field_value_factor": {
-                  "field": "salePrice",
-                  "missing": 0
-                }
-              }
-            ],
-            "query": {
-              "match_all": {}
-            }
-          }
-        }
-      },
-      {
-        "name": "regularPrice",
-        "template_language": "mustache",
-        "template": {
-          "function_score": {
-            "functions": [
-              {
-                "field_value_factor": {
-                  "field": "regularPrice",
-                  "missing": 0
-                }
-              }
-            ],
-            "query": {
-              "match_all": {}
-            }
-          }
-        }
-      },
-      {
-        "name": "discount",
-        "template_language": "mustache",
-        "template": {
-          "function_score": {
-            "functions": [
-              {
-                "field_value_factor": {
-                  "field": "discount",
-                  "missing": 0
-                }
-              }
-            ],
-            "query": {
-              "match_all": {}
-            }
-          }
-        }
-      },
-      {
-        "name": "click_prior",
-        "template_language": "mustache",
-        "template": {
-          "query_string": {
-            "query": "{{click_prior_query}}",
-            "fields": ["_id"]
-          }
-        }
-      },
-      {
         "name": "shortDescription",
         "params": [
           "keywords"
@@ -172,6 +105,54 @@
                 ]
               }
             }                  
+      },
+      {
+        "name": "salePrice",
+        "template_language": "mustache",
+        "template": {
+          "function_score": {
+            "functions": [
+              {
+                "field_value_factor": {
+                  "field": "salePrice",
+                  "missing": 0
+                }
+              }
+            ],
+            "query": {
+              "match_all": {}
+            }
+          }
+        }
+      },
+      {
+        "name": "regularPrice",
+        "template_language": "mustache",
+        "template": {
+          "function_score": {
+            "functions": [
+              {
+                "field_value_factor": {
+                  "field": "regularPrice",
+                  "missing": 0
+                }
+              }
+            ],
+            "query": {
+              "match_all": {}
+            }
+          }
+        }
+      },
+      {
+        "name": "click_prior",
+        "template_language": "mustache",
+        "template": {
+          "query_string": {
+            "query": "{{click_prior_query}}",
+            "fields": ["_id"]
+          }
+        }
       },
       {
         "name": "categoryExactMatch",
@@ -266,8 +247,20 @@
             }
           }
         }
+      },
+      
+      {
+        "name": "cls_tablet",
+        "params": [],
+        "template_language": "script_feature",
+        "template": {
+            "lang": "painless",
+            "source": "\n                    if(params._source[\"class\"] != null && params._source[\"class\"][0].equalsIgnoreCase(params.param1)){\n                        return 1;\n                    } else {\n                        return 0;\n                    }\n                ",
+            "params": {
+              "param1": "tablet"
+            }
+        }
       }
-
     ]
   }
 }
