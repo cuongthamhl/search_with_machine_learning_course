@@ -14,11 +14,13 @@ ENV_DIR=/home/gitpod/.pyenv/versions/3.9.7/envs
 #pip install -r /workspace/search_with_machine_learning_course/requirements_week1.txt
 #pyenv activate search_with_ml_week2
 #pip install -r /workspace/search_with_machine_learning_course/requirements_week2.txt
-pyenv activate search_with_ml_week3
-pip install -r /workspace/search_with_machine_learning_course/requirements_week3.txt
-#pyenv activate search_with_ml_week4
-#pip install -r /workspace/search_with_machine_learning_course/requirements_week4.txt
+#pyenv activate search_with_ml_week3
+#pip install -r /workspace/search_with_machine_learning_course/requirements_week3.txt
+pyenv activate search_with_ml_week4
+pip install -r /workspace/search_with_machine_learning_course/requirements_week4.txt
 
+echo "pyenv activate search_with_ml_week4" >> ~/.bashrc
+echo "cd /workspace/search_with_machine_learning_course/week4" >> ~/.bashrc
 
 
 cd docker

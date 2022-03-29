@@ -1,0 +1,55 @@
+predition for iphone / stemmed: iphon:
+pcmcat191200050015 - iPhone Accessories (2200):0.043403368443250656
+abcat0208011 - iPod & MP3 Speakers, Docks & Radios (1827):0.037946850061416626
+pcmcat248700050021 - Home (3703):0.037323445081710815
+abcat0307005 - Car Accessories (3348):0.03704296052455902
+abcat0300000 - Car, Marine & GPS (6805):0.0349414125084877
+
+
+predition for ipad / stemmed: ipad:
+pcmcat231800050009 - Tablet Accessories (3564):0.07089034467935562
+pcmcat209000050007 - iPad (1762):0.06924150884151459
+pcmcat217900050000 - iPad Accessories (3164):0.05312281847000122
+pcmcat230600050006 - Sports Fan Shop (1001):0.03462045639753342
+pcmcat248700050021 - Home (3703):0.03370543569326401
+
+
+predition for apple iphone / stemmed: appl iphon:
+pcmcat209400050001 - All Mobile Phones with Plans (4907):0.17464517056941986
+pcmcat201900050009 - Screen Protectors (1371):0.0925264060497284
+abcat0800000 - Mobile Phones (25818):0.07401757687330246
+abcat0208007 - iPod & MP3 Player Accessories (2902):0.052892930805683136
+pcmcat171900050029 - Fitted (3992):0.043786462396383286
+
+
+predition for playstation 3 / stemmed: playstat 3:
+abcat0703001 - PS3 Consoles (1040):0.15680861473083496
+abcat0703000 - PlayStation 3 (2109):0.12835147976875305
+abcat0700000 - Video Games (9888):0.06432142853736877
+abcat0302019 - Satellite Radios (1781):0.045173171907663345
+pcmcat209400050001 - All Mobile Phones with Plans (4907):0.03697587177157402
+
+
+predition for age of empires / stemmed: age of empir:
+pcmcat174700050005 - PC Games (1979):0.7140664458274841
+pcmcat247400050000 - PC Laptops (11953):0.12520672380924225
+pcmcat232900050017 - Pre-Owned Games (2802):0.06278996169567108
+cat02015 - Movies & TV Shows (22905):0.047482896596193314
+pcmcat209400050001 - All Mobile Phones with Plans (4907):0.015819257125258446
+
+
+predition for sharp tv / stemmed: sharp tv:
+abcat0101000 - TVs (12129):0.2076147198677063
+abcat0102000 - Blu-ray & DVD Players (1766):0.1588016003370285
+abcat0101001 - All Flat-Panel TVs (11437):0.09067738056182861
+abcat0900000 - Appliances (20851):0.08322571218013763
+pcmcat158900050008 - Projectors & Screens (1222):0.07396620512008667
+
+
+predition for haystack / stemmed: haystack:
+cat02015 - Movies & TV Shows (22905):0.4524732828140259
+abcat0101001 - All Flat-Panel TVs (11437):0.08284122496843338
+pcmcat247400050000 - PC Laptops (11953):0.05037987604737282
+pcmcat209400050001 - All Mobile Phones with Plans (4907):0.03326142951846123
+cat02001 - Music (12475):0.029393300414085388
+
